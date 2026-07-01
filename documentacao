@@ -1,0 +1,741 @@
+# Firmware do ESP32
+
+O firmware foi desenvolvido utilizando a plataforma Arduino para ESP32 e é responsável por toda a lógica embarcada do sistema.
+
+As principais funções executadas pelo firmware são:
+
+- Inicialização dos periféricos;
+- Leitura do sensor DHT11;
+- Atualização do display LCD;
+- Gerenciamento dos LEDs;
+- Leitura dos botões e switches;
+- Controle da comunicação Bluetooth Low Energy;
+- Envio de notificações BLE;
+- Atualização do histórico dos sensores.
+
+---
+
+# Estrutura do Firmware
+
+O firmware é composto pelos seguintes módulos:
+
+| Módulo | Função |
+|---------|---------|
+| Setup | Inicialização do sistema |
+| Loop | Execução contínua |
+| MyServerCallbacks | Eventos de conexão BLE |
+| LedCallbacks | Controle dos LEDs |
+| ResetCallbacks | Reset do histórico |
+| BicolorCallbacks | Controle do LED bicolor |
+| mostraTela() | Atualização do LCD |
+| atualizaHistorico() | Atualização dos valores mínimo/máximo |
+
+---
+
+# Fluxograma do Firmware
+
+```mermaid
+flowchart TD
+
+A[Inicialização] --> B[Inicializa Serial]
+
+B --> C[Inicializa LCD]
+
+C --> D[Inicializa DHT11]
+
+D --> E[Inicializa BLE]
+
+E --> F[Cria Serviços BLE]
+
+F --> G[Inicia Advertising]
+
+G --> H[Loop Principal]
+
+H --> I[Ler Temperatura]
+
+I --> J[Ler Umidade]
+
+J --> K[Atualizar Histórico]
+
+K --> L[Atualizar LCD]
+
+L --> M[Enviar Notificação BLE]
+
+M --> N[Ler Push Buttons]
+
+N --> O[Ler Switches]
+
+O --> P[Atualizar LEDs]
+
+P --> Q[Trocar Tela Automática]
+
+Q --> H
+```
+
+---
+
+# Funcionamento do Setup
+
+Durante a inicialização são executadas as seguintes etapas:
+
+1. Inicialização da comunicação serial;
+2. Inicialização do barramento I²C;
+3. Inicialização do display LCD;
+4. Inicialização do sensor DHT11;
+5. Inicialização do Bluetooth Low Energy;
+6. Criação dos serviços BLE;
+7. Criação das Characteristics;
+8. Configuração do Advertising;
+9. Configuração dos GPIOs;
+10. Exibição da tela inicial.
+
+---
+
+# Funcionamento do Loop
+
+O método `loop()` é executado continuamente durante toda a operação do sistema.
+
+As principais atividades realizadas são:
+
+## Leitura dos sensores
+
+A cada dois segundos são realizadas novas leituras de:
+
+- temperatura;
+- umidade.
+
+---
+
+## Atualização do Histórico
+
+Após cada leitura são atualizados:
+
+- temperatura mínima;
+- temperatura máxima;
+- umidade mínima;
+- umidade máxima.
+
+---
+
+## Atualização do LCD
+
+Sempre que novos dados são obtidos ou ocorre alguma interação do usuário, o display LCD é atualizado.
+
+---
+
+## Envio das Notificações BLE
+
+Quando existe um dispositivo conectado, o ESP32 envia automaticamente:
+
+- temperatura;
+- temperatura em Fahrenheit;
+- umidade;
+- contador de notificações.
+
+---
+
+## Leitura dos Botões
+
+Os botões físicos permitem:
+
+### Push Button 1
+
+- troca manual da tela do LCD.
+
+### Push Button 2
+
+- reinicialização do histórico.
+
+---
+
+## Leitura dos Switches
+
+### SW1
+
+Habilita ou desabilita o controle remoto dos LEDs pelo aplicativo.
+
+### SW2
+
+Controla localmente o LED verde.
+
+### SW3
+
+Controla localmente o LED vermelho.
+
+### SW4
+
+Alterna o gráfico do aplicativo entre:
+
+- Celsius;
+- Fahrenheit.
+
+---
+
+# Diagrama de Classes do Firmware
+
+```mermaid
+classDiagram
+
+class MyServerCallbacks{
+
++onConnect()
+
++onDisconnect()
+
+}
+
+class LedCallbacks{
+
++onWrite()
+
+}
+
+class ResetCallbacks{
+
++onWrite()
+
+}
+
+class BicolorCallbacks{
+
++onWrite()
+
+}
+
+class SensorPacket{
+
++float tempC
+
++float tempF
+
++float umidade
+
+}
+
+MyServerCallbacks --> SensorPacket
+
+LedCallbacks --> SensorPacket
+
+ResetCallbacks --> SensorPacket
+
+BicolorCallbacks --> SensorPacket
+```
+
+---
+
+# Principais Variáveis
+
+| Variável | Descrição |
+|-----------|-----------|
+| temperatura | Temperatura em °C |
+| umidade | Umidade relativa |
+| tempMin | Temperatura mínima |
+| tempMax | Temperatura máxima |
+| umidMin | Umidade mínima |
+| umidMax | Umidade máxima |
+| telaAtual | Tela atualmente exibida |
+| bleConectado | Estado da conexão BLE |
+| notificacoes | Quantidade de notificações enviadas |
+
+---
+
+# Comunicação BLE
+
+O ESP32 opera como um servidor Bluetooth Low Energy.
+
+Durante a conexão, o aplicativo torna-se cliente BLE e passa a receber notificações periódicas contendo os valores dos sensores.
+
+Além disso, o aplicativo pode enviar comandos para:
+
+- controlar LEDs;
+- controlar o LED bicolor;
+- reinicializar o histórico;
+- alterar estados dos dispositivos.
+
+# Aplicativo Flutter
+
+O aplicativo foi desenvolvido utilizando o framework Flutter, permitindo comunicação com o ESP32 através do Bluetooth Low Energy (BLE).
+
+A aplicação é composta por duas telas principais:
+
+- Scanner BLE
+- Dashboard
+
+---
+
+# Estrutura do Projeto
+
+```
+lib
+│
+├── main.dart
+│
+├── pages
+│   ├── scan_page.dart
+│   └── dashboard_page.dart
+│
+└── services
+    └── ble_service.dart
+```
+
+---
+
+# Organização das Classes
+
+## main.dart
+
+Responsável pela inicialização da aplicação Flutter.
+
+Funções:
+
+- inicializar MaterialApp;
+- definir tema;
+- abrir a tela de busca de dispositivos BLE.
+
+---
+
+## ScanPage
+
+Responsável por:
+
+- solicitar permissões Bluetooth;
+- realizar Scan BLE;
+- listar dispositivos encontrados;
+- conectar ao ESP32.
+
+Após a conexão, a tela Dashboard é aberta.
+
+---
+
+## DashboardPage
+
+Tela principal do aplicativo.
+
+Apresenta:
+
+- Temperatura em Celsius;
+- Temperatura em Fahrenheit;
+- Umidade;
+- RSSI;
+- Quantidade de notificações BLE;
+- Gráfico de temperatura;
+- Controle dos LEDs;
+- Controle do LED bicolor;
+- Reset do histórico.
+
+---
+
+## BleService
+
+Classe responsável por toda comunicação Bluetooth.
+
+Principais responsabilidades:
+
+- iniciar Scan;
+- conectar ao ESP32;
+- descobrir Services;
+- descobrir Characteristics;
+- enviar comandos;
+- receber notificações;
+- ler RSSI.
+
+---
+
+# Diagrama de Classes
+
+```mermaid
+classDiagram
+
+class Main
+
+class ScanPage{
+
++startScan()
+
++connect()
+
+}
+
+class DashboardPage{
+
++build()
+
++graficoTemperatura()
+
++sensorCard()
+
+}
+
+class BleService{
+
++startScan()
+
++connect()
+
++verde()
+
++vermelho()
+
++ambos()
+
++desligar()
+
++resetHistorico()
+
++getRSSI()
+
+}
+
+Main --> ScanPage
+
+ScanPage --> BleService
+
+ScanPage --> DashboardPage
+
+DashboardPage --> BleService
+```
+
+---
+
+# Fluxo de Funcionamento
+
+```mermaid
+flowchart TD
+
+A[Abertura do Aplicativo]
+
+A --> B[Solicita Permissões]
+
+B --> C[Realiza Scan BLE]
+
+C --> D[Lista Dispositivos]
+
+D --> E[Conectar]
+
+E --> F[Descobrir Services]
+
+F --> G[Descobrir Characteristics]
+
+G --> H[Receber Notificações]
+
+H --> I[Atualizar Interface]
+
+I --> J[Atualizar Gráficos]
+
+J --> H
+```
+
+---
+
+# Perfil GATT
+
+O sistema utiliza dois serviços BLE.
+
+## Serviço de Controle
+
+UUID
+
+```
+8d8f0001-3b1a-4f91-bd2d-111111111111
+```
+
+Responsável pelo envio de comandos do aplicativo para o ESP32.
+
+---
+
+## Serviço Ambiental
+
+UUID
+
+```
+8d8f1000-3b1a-4f91-bd2d-111111111111
+```
+
+Responsável pelo envio das informações dos sensores.
+
+---
+
+# Characteristics
+
+| Characteristic | UUID | Propriedades | Finalidade |
+|----------------|------|--------------|------------|
+| LED | 8d8f0002-3b1a-4f91-bd2d-111111111111 | Read / Write | Controle dos LEDs |
+| Reset | 8d8f0006-3b1a-4f91-bd2d-111111111111 | Write | Reinicialização do histórico |
+| LED Bicolor | *(UUID utilizado no projeto)* | Read / Write | Controle do LED bicolor |
+| Sensores | 8d8f1001-3b1a-4f91-bd2d-111111111111 | Read / Notify | Temperatura e Umidade |
+| Contador de Notificações | 8d8f0007-3b1a-4f91-bd2d-111111111111 | Read / Notify | Quantidade de notificações BLE |
+
+---
+
+# Estrutura do Pacote de Sensores
+
+O ESP32 envia um pacote contendo três valores em ponto flutuante.
+
+```cpp
+struct SensorPacket {
+
+    float tempC;
+
+    float tempF;
+
+    float umidade;
+
+};
+```
+
+No aplicativo, esses dados são convertidos utilizando a classe `ByteData`, permitindo a recuperação dos três valores.
+
+---
+
+# Atualização dos Dados
+
+Sempre que o ESP32 envia uma nova notificação BLE, o aplicativo realiza:
+
+1. leitura do pacote recebido;
+2. atualização dos cartões dos sensores;
+3. atualização do gráfico;
+4. atualização do histórico local;
+5. atualização do RSSI;
+6. atualização da quantidade de notificações.
+
+---
+
+# Interface do Usuário
+
+A Dashboard é composta pelos seguintes elementos:
+
+- Indicador de conexão BLE;
+- Valor do RSSI;
+- Temperatura em Celsius;
+- Temperatura em Fahrenheit;
+- Umidade;
+- Gráfico da temperatura;
+- Quantidade de notificações BLE;
+- Botões de controle dos LEDs;
+- Botões de controle do LED bicolor;
+- Botão de reinicialização do histórico.
+
+A interface foi desenvolvida utilizando componentes nativos do Flutter, priorizando simplicidade, organização e atualização em tempo real.
+
+# Compilação do Projeto
+
+## Firmware ESP32
+
+O firmware foi desenvolvido utilizando a plataforma Arduino IDE.
+
+### Requisitos
+
+- Arduino IDE 2.x
+- ESP32 Board Package
+- Biblioteca NimBLE-Arduino
+- Biblioteca DHT
+- Biblioteca LiquidCrystal_I2C
+
+### Placa
+
+Selecionar:
+
+```
+ESP32 Dev Module
+```
+
+### Compilação
+
+1. Abrir o arquivo `monitor_ble.ino`;
+2. Selecionar a porta serial correspondente ao ESP32;
+3. Compilar o projeto;
+4. Realizar o upload para a placa.
+
+---
+
+# Aplicativo Flutter
+
+## Requisitos
+
+- Flutter SDK
+- Android SDK
+- Dispositivo Android
+
+### Instalação das dependências
+
+```bash
+flutter pub get
+```
+
+### Execução
+
+```bash
+flutter run
+```
+
+---
+
+# Geração do APK
+
+Para gerar a versão de produção do aplicativo:
+
+```bash
+flutter build apk --release
+```
+
+O APK será gerado em:
+
+```
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+---
+
+# Estrutura do Repositório
+
+```
+Projeto
+│
+├── firmware/
+│     └── monitor_ble.ino
+│
+├── monitor_ble/
+│     ├── lib/
+│     ├── android/
+│     ├── assets/
+│     └── pubspec.yaml
+│
+├── README.md
+│
+└── LICENSE
+```
+
+---
+
+# Funcionalidades Implementadas
+
+## ESP32
+
+✔ Leitura de temperatura
+
+✔ Leitura de umidade
+
+✔ Conversão para Fahrenheit
+
+✔ Histórico mínimo/máximo
+
+✔ Display LCD
+
+✔ Troca automática de telas
+
+✔ Troca manual de telas
+
+✔ Bluetooth Low Energy
+
+✔ Serviços GATT
+
+✔ Notify
+
+✔ Controle de LEDs
+
+✔ Controle de LED bicolor
+
+✔ Reset do histórico
+
+✔ Contador de notificações
+
+✔ Configuração personalizada do Advertising
+
+✔ Configuração personalizada dos parâmetros de conexão
+
+---
+
+## Aplicativo Flutter
+
+✔ Scanner BLE
+
+✔ Conexão BLE
+
+✔ Dashboard
+
+✔ Temperatura
+
+✔ Temperatura Fahrenheit
+
+✔ Umidade
+
+✔ RSSI
+
+✔ Contador de notificações
+
+✔ Gráfico em tempo real
+
+✔ Controle dos LEDs
+
+✔ Controle do LED bicolor
+
+✔ Reset do histórico
+
+---
+
+# Resultados Obtidos
+
+O sistema desenvolvido apresentou funcionamento satisfatório durante os testes realizados.
+
+Foi possível estabelecer comunicação Bluetooth Low Energy entre o ESP32 e o aplicativo Android, permitindo o monitoramento remoto das variáveis ambientais e o controle dos atuadores.
+
+As notificações BLE foram recebidas corretamente pelo aplicativo, possibilitando a atualização em tempo real dos valores exibidos e dos gráficos.
+
+Os testes também demonstraram o correto funcionamento do display LCD, dos botões físicos, dos switches, do histórico dos sensores e dos comandos enviados pelo aplicativo.
+
+---
+
+# Limitações
+
+Durante o desenvolvimento foram identificadas algumas limitações relacionadas à biblioteca NimBLE-Arduino versão 2.5.0.
+
+## RSSI no LCD
+
+O documento da disciplina recomenda a utilização da função:
+
+```cpp
+NimBLEDevice::getPeerRSSI(atualConnHandle)
+```
+
+Entretanto, essa função não está disponível na versão 2.5.0 da biblioteca NimBLE-Arduino utilizada no projeto, impossibilitando sua implementação direta.
+
+Apesar disso, o aplicativo realiza corretamente a leitura do RSSI através da função `readRssi()` disponibilizada pelo cliente BLE.
+
+---
+
+## Segurança BLE
+
+O documento prevê autenticação utilizando Passkey Entry.
+
+A versão da biblioteca NimBLE-Arduino utilizada apresentou diferenças significativas em relação às versões anteriores, exigindo uma implementação adicional dos mecanismos de segurança BLE que não foi incorporada à versão final do projeto.
+
+---
+
+# Trabalhos Futuros
+
+Como continuidade deste projeto, podem ser implementadas as seguintes melhorias:
+
+- autenticação BLE utilizando Passkey;
+- armazenamento histórico de longo prazo;
+- envio do histórico completo via BLE;
+- integração com banco de dados em nuvem;
+- suporte a múltiplos sensores;
+- compatibilidade com dispositivos iOS;
+- exportação dos dados coletados.
+
+---
+
+# Conclusão
+
+O projeto atingiu os objetivos propostos, demonstrando a utilização do Bluetooth Low Energy como meio de comunicação entre um sistema embarcado baseado em ESP32 e um aplicativo móvel desenvolvido em Flutter.
+
+A integração entre hardware e software permitiu o monitoramento remoto das variáveis ambientais, o controle dos atuadores e a visualização gráfica das informações em tempo real.
+
+Além de consolidar conceitos relacionados ao desenvolvimento embarcado e à comunicação BLE, o projeto proporcionou experiência prática na implementação de aplicações móveis utilizando Flutter, integração entre dispositivos e desenvolvimento de sistemas de Internet das Coisas (IoT).
+
+---
+
+# Autores
+
+- Rafaela Gehrke
+- Bernardo Krein
