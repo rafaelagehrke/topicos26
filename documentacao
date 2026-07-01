@@ -548,43 +548,43 @@ ESP32 Dev Module
 
 ---
 
-# Aplicativo Flutter
+# Instalação do Aplicativo (APK)
+
+O aplicativo pode ser instalado diretamente em um dispositivo Android por meio do arquivo `app-release.apk`.
 
 ## Requisitos
 
-- Flutter SDK
-- Android SDK
-- Dispositivo Android
+- Smartphone com Android 8.0 (API 26) ou superior;
+- Bluetooth habilitado;
+- Permissão para instalar aplicativos de fontes desconhecidas.
 
-### Instalação das dependências
+## Passo a passo
 
-```bash
-flutter pub get
-```
+1. Copie o arquivo `app-release.apk` para o smartphone.
+2. Abra o gerenciador de arquivos do dispositivo.
+3. Localize o arquivo `app-release.apk`.
+4. Toque sobre o arquivo para iniciar a instalação.
+5. Caso seja solicitado, permita a instalação de aplicativos de fontes desconhecidas para o aplicativo utilizado (Arquivos, Google Drive, etc.).
+6. Aguarde a conclusão da instalação.
+7. Abra o aplicativo **Monitor BLE**.
 
-### Execução
+## Permissões
 
-```bash
-flutter run
-```
+Na primeira execução, o aplicativo solicitará as seguintes permissões:
 
----
+- Bluetooth;
+- Localização (necessária para busca de dispositivos BLE em versões do Android que exigem essa permissão).
 
-# Geração do APK
+As permissões devem ser concedidas para o funcionamento correto do aplicativo.
 
-Para gerar a versão de produção do aplicativo:
+## Utilização
 
-```bash
-flutter build apk --release
-```
-
-O APK será gerado em:
-
-```
-build/app/outputs/flutter-apk/app-release.apk
-```
-
----
+1. Ligue o ESP32.
+2. Abra o aplicativo.
+3. Toque em **Buscar Dispositivos**.
+4. Selecione **Monitor BLE**.
+5. Aguarde a conexão.
+6. Após conectado, a Dashboard exibirá os dados dos sensores e permitirá o controle dos atuadores.
 
 # Estrutura do Repositório
 
